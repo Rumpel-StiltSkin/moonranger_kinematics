@@ -23,6 +23,6 @@ include_directories(
 )
 
 catkin_add_nosetests(tests/test_two_wheel.py)
-# catkin_add_nosetests(tests/test_four_wheel.py)
+catkin_add_nosetests(tests/test_four_wheel.py)
 
 catkin_python_setup()

@@ -1,3 +1,18 @@
+# ============================================================================
+#
+#       Filename:  kinematics.py
+#
+#    Description:  The kinematics node for performing actuation (body->joints) and navigation (joints-> body) velocities. Contains ability to use different models for verification and comparison. 
+#
+#        Version:  1.0
+#        Created:  09/11/2021
+#       Revision:  none
+#
+#         Author:  Ben Kolligs
+#          Email:  bkolligs@andrew.cmu.edu
+#   Organization:  Planetary Robotics Lab
+#
+# ============================================================================
 #!/usr/bin/python3
 import rospy
 from std_msgs.msg import Float32MultiArray
@@ -7,14 +22,24 @@ from moonranger_kinematics.four_wheel import FourWheel
 class Kinematics:
     def __init__(self) -> None:
         # get the model to use and select it with the parameters
-        self.model_to_use = rospy.get_param("/kinematic_model", "four_wheel")
-        self.radius = rospy.get_param("{0}/radius".format(self.model_to_use), 0.1)
-        self.height = rospy.get_param("{0}/height".format(self.model_to_use), 0.1)
-        self.length = rospy.get_param("{0}/length".format(self.model_to_use), 0.1)
-        self.width = rospy.get_param("{0}/width".format(self.model_to_use), 0.1)
+        self.model_to_use  = rospy.get_param("/kinematic_model", "four_wheel")
+        self.radius        = rospy.get_param("{0}/radius".format(self.model_to_use), 0.1)
+        self.height        = rospy.get_param("{0}/height".format(self.model_to_use), 0.1)
+        self.length        = rospy.get_param("{0}/length".format(self.model_to_use), 0.1)
+        self.width         = rospy.get_param("{0}/width".format(self.model_to_use), 0.1)
+        self.vx            = rospy.get_param("four_wheel/contact_constraints/vx", 0)
+        self.vy            = rospy.get_param("four_wheel/contact_constraints/vy", 0)
+        # define the models
         self.models = {
             'two_wheel': TwoWheel(),
-            'four_wheel' : FourWheel()
+            'four_wheel' : FourWheel(
+                self.width,
+                self.length,
+                self.height,
+                self.radius,
+                self.vx, 
+                self.vy
+            )
         }
         self.model = self.models[self.model_to_use]
 

@@ -7,6 +7,9 @@ four_wheel:
     width: 0.25
     height: 0.4
     radius: 0.2
+    contact_constraints:
+        vx: 0
+        vy: 0
 
 two_wheel:
     length: 0.1
