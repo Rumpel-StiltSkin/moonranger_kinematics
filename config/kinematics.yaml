@@ -1,0 +1,15 @@
+kinematic_model: "four_wheel"
+drive_arc_topic: "/navigation/drive_arc_cmd"
+wheels_topic: "/wheels"
+
+four_wheel:
+    length: 0.1
+    width: 0.25
+    height: 0.4
+    radius: 0.2
+
+two_wheel:
+    length: 0.1
+    width: 0.25
+    height: 0.4
+    radius: 0.2
