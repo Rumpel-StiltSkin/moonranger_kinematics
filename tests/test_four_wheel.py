@@ -12,6 +12,9 @@ class TestFourWheel(unittest.TestCase):
         self.test_rover = FourWheel(0.1, 0.2, 0.1, 0.07)
 
     def test_jacobian(self):
+        '''
+        Verify jacobian declaration
+        '''
         test = self.test_rover.jacobian
         compare = np.array(
             [
@@ -32,10 +35,14 @@ class TestFourWheel(unittest.TestCase):
         self.assertIsNone(np.testing.assert_allclose(test, compare))
 
     def test_jacobian_size(self):
+        '''
+        Test jacobian size
+        '''
         test = self.tester.jacobian.shape
         compare = (12, 10)
         self.assertEqual(test, compare)
     
+    # the following tests check sizes of various jacobians
     def test_jacobian_body_size(self):
         test = self.tester.body_jacobian.shape
         compare = (12, 6)
@@ -57,27 +64,105 @@ class TestFourWheel(unittest.TestCase):
         self.assertEqual(test, compare)
     
     def test_wheel_jacobian_inv(self):
+        '''
+        Verify the static inverse matches the calculated inverse
+        '''
         test = np.round(np.linalg.pinv(self.tester.wheel_jacobian), 8)
         compare = self.tester.inv_wheel_jacobian
         self.assertIsNone(np.testing.assert_allclose(test, compare))
 
     def test_body_jacobian_inv(self):
+        '''
+        Verify the static inverse matches the calculated inverse
+        '''
         test = np.round(np.linalg.pinv(self.tester.body_jacobian), 8)
         compare = self.tester.inv_body_jacobian
         # self.assert_(np.testing.assert_allclose(test, compare))
         self.assertIsNone(np.testing.assert_allclose(test, compare))
     
-    def test_actuation_kinematics(self):
-        
-        test = self.test_rover.actuation([0, 0, 0, 1, 0, 0])
+    def test_actuation_kinematics_straight(self):
+        '''
+        Drive in a straigt line
+        '''
+        test = np.round(self.test_rover.actuation([0, 0, 0, 1, 0, 0]), 4)
         compare = np.array([
-            1.0,
-            1.0,
-            1.0,
-            1.0
-        ])
+            14.2857,
+            14.2857,
+            14.2857,
+            14.2857,
+        ]).reshape((-1, 1))
         self.assertIsNone(np.testing.assert_allclose(test, compare))
 
+    def test_actuation_kinematics_arc(self):
+        '''
+        Drive in an arc
+        '''
+        test = np.round(self.test_rover.actuation([0, 0, 0.1, 0.5, 0, 0]), 4)
+        compare = np.array([
+            7.0,
+            7.2857,
+            7.0,
+            7.2857,
+        ]).reshape((-1, 1))
+        self.assertIsNone(np.testing.assert_allclose(test, compare))
+    
+    def test_actuation_kinematics_point_turn(self):
+        '''
+        Drive in a point turn
+        '''
+        test = np.round(self.test_rover.actuation([0, 0, np.pi, 0.0, 0, 0]), 4)
+        compare = np.array([
+            -4.4880 ,
+            4.4880  ,
+            -4.4880 ,
+            4.4880
+        ]).reshape((-1, 1))
+        self.assertIsNone(np.testing.assert_allclose(test, compare))
+    
+    def test_navigation_forward(self):
+        '''
+        Driving forward, determine body velocity
+        '''
+        test = np.round(self.test_rover.navigation([0.1, 0.1, 0.1, 0.1]), 4)
+        compare = np.array([
+            0, 
+            0, 
+            0, 
+            0.007,
+            0, 
+            0
+        ]).reshape((-1, 1))
+        self.assertIsNone(np.testing.assert_allclose(test, compare))
+
+    def test_navigation_arc(self):
+        '''
+        Driving forward, determine body velocity
+        '''
+        test = np.round(self.test_rover.navigation([0.1, 0.3, 0.1, 0.3]), 4)
+        compare = np.array([
+            0, 
+            0, 
+            0.014,
+            0.014,
+            0, 
+            0
+        ]).reshape((-1, 1))
+        self.assertIsNone(np.testing.assert_allclose(test, compare))
+
+    def test_navigation_disparate_wheels(self):
+        '''
+        Say the wheels are moving at different velocities, and a couple are moving slower than desired
+        '''
+        test = np.round(self.test_rover.navigation([0.15, 0.33, 0.08, 0.25]), 4)
+        compare = np.array([
+            0, 
+            0, 
+            0.0122,
+            0.0142,
+            0, 
+            0
+        ]).reshape((-1, 1))
+        self.assertIsNone(np.testing.assert_allclose(test, compare))
 
 if __name__ == '__main__':
     import rostest

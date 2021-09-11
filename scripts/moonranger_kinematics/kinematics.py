@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # ============================================================================
 #
 #       Filename:  kinematics.py
@@ -13,11 +14,12 @@
 #   Organization:  Planetary Robotics Lab
 #
 # ============================================================================
-#!/usr/bin/python3
 import rospy
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Float32
 from moonranger_kinematics.two_wheel import TwoWheel
 from moonranger_kinematics.four_wheel import FourWheel
+from moonranger_kinematics.utils import drive_arc_convert
+from moonranger_kinematics.msg import DriveArc, WheelRates, BodyVel
 
 class Kinematics:
     def __init__(self) -> None:
@@ -47,29 +49,57 @@ class Kinematics:
         self.wheels_topic = rospy.get_param("wheels_topic", "/body_vel")
 
         # subscribers
-        self.drive_arc_sub = rospy.Subscriber(self.drive_arc_topic, Float32MultiArray, self.drive_arc_sub_callback, queue_size=1)
-        self.body_vel_sub = rospy.Subscriber(self.wheels_topic, Float32MultiArray, self.wheels_sub_callback, queue_size=1)
+        self.drive_arc_sub = rospy.Subscriber(self.drive_arc_topic, DriveArc, self.drive_arc_sub_callback, queue_size=1)
+        self.body_vel_sub = rospy.Subscriber(self.wheels_topic, Float32, self.wheels_sub_callback, queue_size=1)
 
         # publishers
-        self.wheel_speeds_pub = rospy.Publisher("/kinematics/wheels", Float32MultiArray, queue_size=1)
-        self.body_vel_pub = rospy.Publisher("/kinematics/body", Float32MultiArray, queue_size=1)
+        self.wheel_speeds_pub = rospy.Publisher("/kinematics/wheels", Float32, queue_size=1)
+        self.body_vel_pub = rospy.Publisher("/kinematics/body", Float32, queue_size=1)
 
         # start the ros node
         while not rospy.is_shutdown():
             # spin to wait for messages
             rospy.spin()
 
-    def drive_arc_sub_callback(self):
+    def drive_arc_sub_callback(self, msg):
         '''
         Coverts drive arcs into ingestable forms for the kinematics models
         '''
-        pass
+        psi_dot, x_dot = drive_arc_convert(
+            msg.velocity,
+            msg.radius,
+            msg.time
+        )
+        self.wheel_rates = self.model.actuation(
+            [
+                0, 
+                0, 
+                psi_dot, 
+                x_dot, 
+                0, 
+                0
+            ]
+        )
 
-    def wheels_sub_callback(self):
+        wheel_msg = Float32(self.wheel_rates)
+        self.wheel_speeds_pub.publish(wheel_msg)
+
+    def wheels_sub_callback(self, msg):
         '''
         Feeds the kinematic models body velocity so it 
         '''
-        pass
+        wheel_rates = msg.data
+        self.body_vel = self.model.navigation(
+            [
+                wheel_rates[0],
+                wheel_rates[1],
+                wheel_rates[2],
+                wheel_rates[3],
+            ]
+        )
+
+        body_msg = Float32(self.body_vel)
+        self.body_vel_pub.publish(body_msg)
 
 if __name__ == "__main__":
     rospy.init_node("moonranger_kinematics_node")

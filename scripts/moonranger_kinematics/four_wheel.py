@@ -77,18 +77,21 @@ class FourWheel:
 
     def actuation(self, body_velocity):
         '''
-        Perform the actuation kinematics: body -> joint
+        Perform the actuation kinematics: body -> joint. 
+        Output is in radians per second
         '''
         if not isinstance(body_velocity, np.ndarray):
             body_velocity = np.array(body_velocity)
             body_velocity = body_velocity.reshape((-1, 1))
+        print(body_velocity.shape)
         assert body_velocity.shape == (6, 1)
 
         return self.inv_wheel_jacobian @ (self.v_constraints - self.body_jacobian @ body_velocity)
     
     def navigation(self, wheel_velocity):
         '''
-        Perform the navigation kinematics: joint -> body
+        Perform the navigation kinematics: joint -> body.
+        Output is in meters per second
         '''
         if not isinstance(wheel_velocity, np.ndarray):
             wheel_velocity = np.array(wheel_velocity)
@@ -98,7 +101,7 @@ class FourWheel:
         return self.inv_body_jacobian @ (self.v_constraints - self.wheel_jacobian @ wheel_velocity)
 
 if __name__ == '__main__':
-    test = FourWheel(0.1, 0.2, 0.1, 0.07)
+    test = FourWheel(0.1, 0.2, 0.1, 1)
     print(test.body_jacobian.shape)
     inside = [0, 0, 0, 1, 0, 0]
     print(test.actuation(inside))
