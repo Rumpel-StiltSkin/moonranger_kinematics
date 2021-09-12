@@ -20,7 +20,9 @@ class FourWheel:
         '''
         This initializes the four wheeled kinematic model using wheel jacobians
         '''
+        # width of the vehicle from the center frame (total vehicle is 2w)
         self.width         = w
+        # length of vehicle from center frame (total vehicle is 2l)
         self.length        = l
         self.height        = h
         self.wheel_radius  = r
@@ -98,9 +100,3 @@ class FourWheel:
         assert wheel_velocity.shape == (4, 1)
 
         return self.inv_body_jacobian @ (self.v_constraints - self.wheel_jacobian @ wheel_velocity)
-
-if __name__ == '__main__':
-    test = FourWheel(0.1, 0.2, 0.1, 1)
-    print(test.body_jacobian.shape)
-    inside = [0, 0, 0, 1, 0, 0]
-    print(test.actuation(inside))
