@@ -83,7 +83,6 @@ class FourWheel:
         if not isinstance(body_velocity, np.ndarray):
             body_velocity = np.array(body_velocity)
             body_velocity = body_velocity.reshape((-1, 1))
-        print(body_velocity.shape)
         assert body_velocity.shape == (6, 1)
 
         return self.inv_wheel_jacobian @ (self.v_constraints - self.body_jacobian @ body_velocity)

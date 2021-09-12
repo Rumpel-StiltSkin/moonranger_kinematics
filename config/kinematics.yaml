@@ -1,12 +1,13 @@
 kinematic_model: "four_wheel"
 drive_arc_topic: "/navigation/drive_arc_cmd"
 wheels_topic: "/wheels"
+motor_factor: 1.0
 
 four_wheel:
-    length: 0.1
-    width: 0.25
-    height: 0.4
-    radius: 0.2
+    width: 0.1
+    length: 0.2
+    height: 0.1
+    radius: 0.07
     contact_constraints:
         vx: 0
         vy: 0

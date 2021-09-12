@@ -2,7 +2,7 @@
 <launch>
 
     <node name="kinematics_node" pkg="moonranger_kinematics" type="kinematics.py" output="screen">
-        <rosparam file="$(find moonranger_kinematics)/config/kinematics.yaml" command="load" ns="kinematics"/>
+        <rosparam file="$(find moonranger_kinematics)/config/kinematics.yaml" command="load"/>
     </node>
 
 </launch>

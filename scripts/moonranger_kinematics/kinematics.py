@@ -24,13 +24,15 @@ from moonranger_kinematics.msg import DriveArc, WheelRates, BodyVel
 class Kinematics:
     def __init__(self) -> None:
         # get the model to use and select it with the parameters
-        self.model_to_use  = rospy.get_param("/kinematic_model", "four_wheel")
-        self.radius        = rospy.get_param("{0}/radius".format(self.model_to_use), 0.1)
-        self.height        = rospy.get_param("{0}/height".format(self.model_to_use), 0.1)
-        self.length        = rospy.get_param("{0}/length".format(self.model_to_use), 0.1)
-        self.width         = rospy.get_param("{0}/width".format(self.model_to_use), 0.1)
-        self.vx            = rospy.get_param("four_wheel/contact_constraints/vx", 0)
-        self.vy            = rospy.get_param("four_wheel/contact_constraints/vy", 0)
+        self.model_to_use  = rospy.get_param("~kinematic_model", "four_wheel")
+        self.radius        = rospy.get_param("~{0}/radius".format(self.model_to_use), 0.1)
+        self.height        = rospy.get_param("~{0}/height".format(self.model_to_use), 0.1)
+        self.length        = rospy.get_param("~{0}/length".format(self.model_to_use), 0.1)
+        self.width         = rospy.get_param("~{0}/width".format(self.model_to_use), 0.1)
+        self.vx            = rospy.get_param("~four_wheel/contact_constraints/vx", 0)
+        self.vy            = rospy.get_param("~four_wheel/contact_constraints/vy", 0)
+        # motor factor to actually send to motor
+        self.motor_factor  = rospy.get_param("~motor_factor", 1.0)
         # define the models
         self.models = {
             'two_wheel': TwoWheel(),
@@ -46,15 +48,15 @@ class Kinematics:
         self.model = self.models[self.model_to_use]
 
         self.drive_arc_topic = rospy.get_param("drive_arc_topic", "/navigation/drive_arc_cmd")
-        self.wheels_topic = rospy.get_param("wheels_topic", "/body_vel")
+        self.wheels_topic = rospy.get_param("wheels_topic", "/wheels")
 
         # subscribers
         self.drive_arc_sub = rospy.Subscriber(self.drive_arc_topic, DriveArc, self.drive_arc_sub_callback, queue_size=1)
-        self.body_vel_sub = rospy.Subscriber(self.wheels_topic, Float32, self.wheels_sub_callback, queue_size=1)
+        self.wheels_sub = rospy.Subscriber(self.wheels_topic, WheelRates, self.wheels_sub_callback, queue_size=1)
 
         # publishers
-        self.wheel_speeds_pub = rospy.Publisher("/kinematics/wheels", Float32, queue_size=1)
-        self.body_vel_pub = rospy.Publisher("/kinematics/body", Float32, queue_size=1)
+        self.wheel_speeds_pub = rospy.Publisher("/kinematics/wheels", WheelRates, queue_size=1)
+        self.body_vel_pub = rospy.Publisher("/kinematics/body", BodyVel, queue_size=1)
 
         # start the ros node
         while not rospy.is_shutdown():
@@ -81,14 +83,17 @@ class Kinematics:
             ]
         )
 
-        wheel_msg = Float32(self.wheel_rates)
+        # account for motor command here by converting to RPM
+        self.wheel_rates = self.wheel_rates * self.motor_factor
+        wheel_msg = WheelRates(self.wheel_rates)
         self.wheel_speeds_pub.publish(wheel_msg)
 
     def wheels_sub_callback(self, msg):
         '''
         Feeds the kinematic models body velocity so it 
         '''
-        wheel_rates = msg.data
+        # convert the motor readings into wheel rates in rad/s
+        wheel_rates = msg.rates / self.motor_factor
         self.body_vel = self.model.navigation(
             [
                 wheel_rates[0],
@@ -98,7 +103,7 @@ class Kinematics:
             ]
         )
 
-        body_msg = Float32(self.body_vel)
+        body_msg = BodyVel(self.body_vel)
         self.body_vel_pub.publish(body_msg)
 
 if __name__ == "__main__":
