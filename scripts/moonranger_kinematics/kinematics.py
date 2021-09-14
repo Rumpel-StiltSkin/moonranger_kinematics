@@ -25,10 +25,11 @@ class Kinematics:
     def __init__(self) -> None:
         # get the model to use and select it with the parameters
         self.model_to_use  = rospy.get_param("~kinematic_model", "four_wheel")
-        self.radius        = rospy.get_param("~{0}/radius".format(self.model_to_use), 0.1)
-        self.height        = rospy.get_param("~{0}/height".format(self.model_to_use), 0.1)
-        self.length        = rospy.get_param("~{0}/length".format(self.model_to_use), 0.1)
-        self.width         = rospy.get_param("~{0}/width".format(self.model_to_use), 0.1)
+        # this data taken from the IICD document
+        self.radius        = rospy.get_param("~{0}/radius".format(self.model_to_use), 0.191/2)
+        self.height        = rospy.get_param("~{0}/height".format(self.model_to_use), 0.17 - 0.191/2)
+        self.length        = rospy.get_param("~{0}/length".format(self.model_to_use), 0.4444/2)
+        self.width         = rospy.get_param("~{0}/width".format(self.model_to_use), 0.6439/2)
         self.vx            = rospy.get_param("~four_wheel/contact_constraints/vx", 0)
         self.vy            = rospy.get_param("~four_wheel/contact_constraints/vy", 0)
         # motor factor to actually send to motor

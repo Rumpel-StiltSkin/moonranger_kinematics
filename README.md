@@ -12,13 +12,15 @@ The main change that needs to happen here is just the subscription and publisher
 1. **Navigation Kinematics:** Obtaining body velocity from wheel rates
 2. **Actuation Kinematics:** Obtaining wheel rates from body velocity
 
+The node will need subscribe to `/navigator/drive_arc` with message type `RASM_DRIVE_ARC_MSG`. It will need to publish to `/joy` of message type `Joy`. This message type doesn't natively handle four wheel velocities so that'll need to be changed. 
+
 ## Parameter setting
 
 There are several parameters that are tunable in order to change performance of the model. Most important are: 
-* The length of the vehicle from the center point
-* The width of the vehicle from the center point
-* The vertical translation (height) of the wheel hubs from the center point
-* The wheel radius
+* The length of the vehicle from the center point = 0.2222
+* The width of the vehicle from the center point = 0.32195
+* The vertical translation (height) of the wheel hubs from the center point = 0.0745
+* The wheel radius = 0.0955
 
 Additionally when adjusting slip there are two parameters we can tune: 
 1. The wheel radius
