@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 # ============================================================================
 #
 #       Filename:  kinematics.py
@@ -25,9 +25,9 @@ from rasm.msg import RASM_DRIVE_ARC_MSG
 from sensor_msgs.msg import Joy
 
 class Kinematics:
-    def __init__(self) -> None:
+    def __init__(self):
         # get the model to use and select it with the parameters
-        self.model_to_use  = rospy.get_param("~kinematic_model", "four_wheel")
+        self.model_to_use  = rospy.get_param("~kinematic_model", "four__wheel")
         self.radius        = rospy.get_param("~{0}/radius".format(self.model_to_use), 0.1)
         self.height        = rospy.get_param("~{0}/height".format(self.model_to_use), 0.1)
         self.length        = rospy.get_param("~{0}/length".format(self.model_to_use), 0.1)
@@ -38,7 +38,11 @@ class Kinematics:
         self.motor_factor  = rospy.get_param("~motor_factor", 1.0)
         # define the models
         self.models = {
-            'two_wheel': TwoWheel(),
+            'two_wheel': TwoWheel(
+                self.width,
+                self.length,
+                self.height,
+                self.radius),
             'four_wheel' : FourWheel(
                 self.width,
                 self.length,
@@ -58,40 +62,26 @@ class Kinematics:
 
         # subscribers
         # self.drive_arc_sub = rospy.Subscriber(self.drive_arc_topic, DriveArc, self.drive_arc_sub_callback, queue_size=1)
-        self.wheels_sub = rospy.Subscriber(self.wheels_topic, WheelRates, self.wheels_sub_callback, queue_size=1)
-        self.drive_arc_sub = rospy.Subscriber("/navigator/drive_arc", RASM_DRIVE_ARC_MSG, self.drive_arc_sub_callback, queue_size=1)
+        # self.wheels_sub = rospy.Subscriber(self.wheels_topic, WheelRates, self.wheels_sub_callback, queue_size=1)
+        self.drive_arc_sub = rospy.Subscriber("/navigator/drive_arc", RASM_DRIVE_ARC_MSG, self.drive_arc_sub_callback)       
+        # self.drive_arc_sub = Nonei
 
         # publishers
         self.wheel_speeds_pub = rospy.Publisher("/kinematics/wheels", WheelRates, queue_size=1)
         self.body_vel_pub = rospy.Publisher("/kinematics/body", BodyVel, queue_size=1)
-        self.joy_pub = rospy.Publisher('joy', Joy, queue_size=1)
-
-        # start the ros node
-        while not rospy.is_shutdown():
-            curr_time = rospy.get_rostime()
-
-            if self.drive_arc_msg and curr_time.secs + self.drive_arc_msg.duration > rospy.get_rostime().secs:
-                try:
-                    self.wheel_rates_to_joy()
-                    self.joy_pub.publish(self.drive_cmd)
-                except e:
-                    print(e)
-            else:
-                self.drive_cmd.axes = [0, 0, 0, 0, 0, 0]
-                self.joy_pub.publish(self.drive_cmd)
-
-            rospy.spin()
+        self.joy_pub = rospy.Publisher('/joy', Joy, queue_size=1)
 
     def drive_arc_sub_callback(self, msg):
         '''
         Coverts drive arcs into ingestable forms for the kinematics models
         '''
         self.drive_arc_msg = msg
+        rospy.loginfo('Sub. to ArcMessages')
 
         psi_dot, x_dot = drive_arc_convert(
-            msg.speed,
+            msg.speed*100,
             msg.radius,
-            msg.time
+            msg.duration
         )
         self.wheel_rates = self.model.actuation(
             [
@@ -103,7 +93,7 @@ class Kinematics:
                 0
             ]
         )
-
+        
         # account for motor command here by converting to RPM
         self.wheel_rates = self.wheel_rates * self.motor_factor
         wheel_msg = WheelRates(self.wheel_rates)
@@ -131,7 +121,7 @@ class Kinematics:
         ROVER_MAX_SPEED = 0.07 # m/s
         JOY_MAX_INPUT = 0.7
 
-        if not self.wheel_rates:
+        if not self.wheel_rates[0]:
             rospy.logwarn("Couldn't get Wheel Rates")
             return False
 
@@ -148,7 +138,9 @@ class Kinematics:
         # [0, FL, FR, RL, RR, 0]
         self.drive_cmd.axes = [0, joy_v_fl, joy_v_fr, joy_v_rl, joy_v_rr, 0]
 
-    def wheelVeltoJoy(v, vel_range, joy_vel_range):
+        return True
+
+    def wheelVeltoJoy(self, v, vel_range, joy_vel_range):
         # formula: [x_min, x_max] => [a, b]
         # [-0.07, 0.07] => [-0.7, 0.7]
         # new_val = (b-a) * ( (x-x_min)/(x_max-x_min) ) + a
@@ -159,7 +151,27 @@ if __name__ == "__main__":
     rospy.init_node("moonranger_kinematics_node")
     rospy.loginfo("(Kinematic Model) for Drive Arc Conversion - Initialising")
 
-    try:
-        kinematics = Kinematics()
-    except rospy.ROSInitException:
-        pass
+    r = rospy.Rate(10)
+    kin = Kinematics()
+    rospy.loginfo('Using %s Kinematic Model', kin.model_to_use)
+    # kin.drive_arc_sub = rospy.Subscriber("/navigator/drive_arc", RASM_DRIVE_ARC_MSG, kin.drive_arc_sub_callback)
+
+    # start the ros node
+    while not rospy.is_shutdown():
+        curr_time = rospy.get_rostime()
+        # rospy.loginfo('Running')
+
+        if kin.drive_arc_msg and curr_time.secs + kin.drive_arc_msg.duration > rospy.get_rostime().secs:
+            try:
+                status = kin.wheel_rates_to_joy()
+                kin.joy_pub.publish(kin.drive_cmd)
+            except Exception as e:
+                print(e)
+        else:
+            kin.drive_cmd.axes = [0, 0, 0, 0, 0, 0]
+            kin.joy_pub.publish(kin.drive_cmd)
+
+        r.sleep()
+
+    # except rospy.ROSInitException:
+    #     pass

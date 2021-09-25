@@ -16,7 +16,7 @@
 import numpy as np
 
 class TwoWheel:
-    def __init__(self, w, l, h, r) -> None:
+    def __init__(self, w, l, h, r):
         '''
         This initializes the two wheeled differential drive model for moonranger
         '''
@@ -47,10 +47,12 @@ class TwoWheel:
         '''
         if not isinstance(body_velocity, np.ndarray):
             body_velocity = np.array(body_velocity)
-            body_velocity = body_velocity.reshape((-1, 1))
+            body_velocity = body_velocity[3:5].reshape((-1, 1))
         assert body_velocity.shape == (2, 1)
 
-        return self.body_jacobian @ body_velocity
+        vel = np.matmul(self.body_jacobian, body_velocity)
+        
+        return np.array([vel[0], vel[1], vel[0], vel[1]]).reshape(4,1)  # [FL, FR, RL, RR]
 
     def navigation(self, wheel_velocity):
         '''
@@ -62,4 +64,4 @@ class TwoWheel:
             wheel_velocity = wheel_velocity.reshape((-1, 1))
         assert wheel_velocity.shape == (2, 1)
 
-        return self.wheel_jacobian @ wheel_velocity
+        return np.matmul(self.wheel_jacobian, wheel_velocity)

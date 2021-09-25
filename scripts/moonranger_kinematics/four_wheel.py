@@ -16,7 +16,7 @@
 import numpy as np
 
 class FourWheel:
-    def __init__(self, w, l, h, r, vx=0, vy=0) -> None:
+    def __init__(self, w, l, h, r, vx=0, vy=0):
         '''
         This initializes the four wheeled kinematic model using wheel jacobians
         '''
@@ -87,7 +87,7 @@ class FourWheel:
             body_velocity = body_velocity.reshape((-1, 1))
         assert body_velocity.shape == (6, 1)
 
-        return self.inv_wheel_jacobian @ (self.v_constraints - self.body_jacobian @ body_velocity)
+        return np.matmul(self.inv_wheel_jacobian, (self.v_constraints - np.matmul(self.body_jacobian, body_velocity)))
     
     def navigation(self, wheel_velocity):
         '''
@@ -99,4 +99,4 @@ class FourWheel:
             wheel_velocity = wheel_velocity.reshape((-1, 1))
         assert wheel_velocity.shape == (4, 1)
 
-        return self.inv_body_jacobian @ (self.v_constraints - self.wheel_jacobian @ wheel_velocity)
+        return np.matmul(self.inv_body_jacobian, (self.v_constraints - np.matmul(self.wheel_jacobian, wheel_velocity)))
