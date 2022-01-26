@@ -32,8 +32,8 @@ class Kinematics:
         self.height        = rospy.get_param("~{0}/height".format(self.model_to_use), 0.1)
         self.length        = rospy.get_param("~{0}/length".format(self.model_to_use), 0.1)
         self.width         = rospy.get_param("~{0}/width".format(self.model_to_use), 0.1)
-        self.vx            = rospy.get_param("~four_wheel/contact_constraints/vx", 0)
-        self.vy            = rospy.get_param("~four_wheel/contact_constraints/vy", 0)
+        self.vxl           = rospy.get_param("~four_wheel/contact_constraints/vxl", 0)
+        self.vxr           = rospy.get_param("~four_wheel/contact_constraints/vxr", 0)
         # motor factor to actually send to motor
         self.motor_factor  = rospy.get_param("~motor_factor", 1.0)
         # define the models
@@ -48,8 +48,8 @@ class Kinematics:
                 self.length,
                 self.height,
                 self.radius,
-                self.vx, 
-                self.vy
+                self.vxl, 
+                self.vxr
             )
         }
         self.model = self.models[self.model_to_use]
@@ -79,7 +79,7 @@ class Kinematics:
         rospy.loginfo('Sub. to ArcMessages')
 
         psi_dot, x_dot = drive_arc_convert(
-            msg.speed*100,
+            msg.speed,
             msg.radius,
             msg.duration
         )
@@ -154,12 +154,15 @@ if __name__ == "__main__":
     r = rospy.Rate(10)
     kin = Kinematics()
     rospy.loginfo('Using %s Kinematic Model', kin.model_to_use)
+    rospy.loginfo('Wheel Radius %f', kin.radius)
     # kin.drive_arc_sub = rospy.Subscriber("/navigator/drive_arc", RASM_DRIVE_ARC_MSG, kin.drive_arc_sub_callback)
 
     # start the ros node
     while not rospy.is_shutdown():
         curr_time = rospy.get_rostime()
         # rospy.loginfo('Running')
+        #kin.drive_cmd.axes = [0.0, -1.0, -1.0, -1.0, -1.0, 0.0]
+        #kin.joy_pub.publish(kin.drive_cmd)
 
         if kin.drive_arc_msg and curr_time.secs + kin.drive_arc_msg.duration > rospy.get_rostime().secs:
             try:
