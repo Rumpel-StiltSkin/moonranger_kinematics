@@ -16,7 +16,7 @@
 import numpy as np
 
 class FourWheel:
-    def __init__(self, w, l, h, r, vx=0, vy=0) -> None:
+    def __init__(self, w, l, h, r, vxl=0, vxr=0):
         '''
         This initializes the four wheeled kinematic model using wheel jacobians
         '''
@@ -27,9 +27,10 @@ class FourWheel:
         self.height        = h
         self.wheel_radius  = r
         # velocity constraints for the contact points, this is a knob to tune slip estimate
-        self.v_constraints = np.zeros((12, 1))
-        self.v_constraints[[0, 3, 6, 9]]   = vx
-        self.v_constraints[[1, 4, 7, 10]]  = vy
+        self.v_constraints_l = np.zeros((12, 1))
+        self.v_constraints_r = np.zeros((12, 1))
+        self.v_constraints_l[[0, 6]]  = vxl
+        self.v_constraints_r[[3, 9]]  = vxr
         self.jacobian      = np.array(
             [
                 [0    , -h-r  , -w  , 1  , 0  , 0  , -r  , 0   , 0  , 0]  ,
@@ -87,7 +88,14 @@ class FourWheel:
             body_velocity = body_velocity.reshape((-1, 1))
         assert body_velocity.shape == (6, 1)
 
-        return self.inv_wheel_jacobian @ (self.v_constraints - self.body_jacobian @ body_velocity)
+        if (body_velocity[2] <= 0):
+            v_constraint = self.v_constraints_l
+        elif (body_velocity[2] > 0):
+            v_constraint = self.v_constraints_r
+        else:
+            v_constraint = np.zeros((12,1))
+
+        return np.matmul(self.inv_wheel_jacobian, (v_constraint - np.matmul(self.body_jacobian, body_velocity)))
     
     def navigation(self, wheel_velocity):
         '''
@@ -99,4 +107,4 @@ class FourWheel:
             wheel_velocity = wheel_velocity.reshape((-1, 1))
         assert wheel_velocity.shape == (4, 1)
 
-        return self.inv_body_jacobian @ (self.v_constraints - self.wheel_jacobian @ wheel_velocity)
+        return np.matmul(self.inv_body_jacobian, (self.v_constraints - np.matmul(self.wheel_jacobian, wheel_velocity)))

@@ -4,13 +4,13 @@ wheels_topic: "/joy"
 motor_factor: 1.0
 
 four_wheel:
-    width: 0.32195
+    width: 0.42195
     length: 0.2222
     height: 0.0745
-    radius: 0.0955
+    radius: 0.1016 
     contact_constraints:
-        vx: 0
-        vy: 0
+        vxl: -0.0065
+        vxr: -0.0075
 
 two_wheel:
     length: 0.1

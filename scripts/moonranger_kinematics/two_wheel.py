@@ -16,7 +16,7 @@
 import numpy as np
 
 class TwoWheel:
-    def __init__(self, w, l, h, r) -> None:
+    def __init__(self, w, l, h, r):
         '''
         This initializes the two wheeled differential drive model for moonranger
         '''
@@ -29,14 +29,15 @@ class TwoWheel:
 
         self.wheel_jacobian = 0.5*np.array(
             [
-                [1   , 1     ] ,
-                [1/w , 1/w   ]
+                [1   ,  1   ] ,
+                [1/w , -1/w ]
             ]
         )
-        self.body_jacobian = 1/r * np.array(
+        # 2w - is the width of the rover
+        self.body_jacobian = np.array(
             [
-                [1, -w/2 ],
-                [1, w/2  ]
+                [1,  w],
+                [1, -w]
             ]
         )
 
@@ -47,10 +48,13 @@ class TwoWheel:
         '''
         if not isinstance(body_velocity, np.ndarray):
             body_velocity = np.array(body_velocity)
-            body_velocity = body_velocity.reshape((-1, 1))
+            body_velocity = np.flip(body_velocity[2:4]).reshape((-1, 1)) # Flip x_dot & psi_dot
+            # print(body_velocity)
         assert body_velocity.shape == (2, 1)
 
-        return self.body_jacobian @ body_velocity
+        vel = np.matmul(self.body_jacobian, body_velocity)/self.wheel_radius # [v_r / v_l]' - Angular Vel
+
+        return np.array([vel[1], vel[0], vel[1], vel[0]]).reshape(4,1)  # [FL, FR, RL, RR]
 
     def navigation(self, wheel_velocity):
         '''
@@ -62,4 +66,4 @@ class TwoWheel:
             wheel_velocity = wheel_velocity.reshape((-1, 1))
         assert wheel_velocity.shape == (2, 1)
 
-        return self.wheel_jacobian @ wheel_velocity
+        return np.matmul(self.wheel_jacobian, wheel_velocity*self.wheel_radius)
